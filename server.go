@@ -262,6 +262,9 @@ func (ln *Listener) serve() error {
 
 		go func() {
 			err := ln.handle(conn)
+			if err == nil {
+				return
+			}
 			srv := ln.atomic.Load().(*listenerHandles).Server
 			var clientErr clientError
 			if !errors.As(err, &clientErr) || srv.Debug {
