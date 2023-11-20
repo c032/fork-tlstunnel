@@ -16,6 +16,7 @@ import (
 
 	"git.sr.ht/~emersion/go-scfg"
 	"github.com/caddyserver/certmagic"
+	"github.com/libdns/dnsupdate"
 )
 
 func parseConfig(srv *Server, cfg scfg.Block) error {
@@ -250,6 +251,19 @@ func parseTLS(srv *Server, d *scfg.Directive) error {
 					Name:   cmdName,
 					Params: cmdParams,
 				},
+			}
+		case "acme_dns_update":
+			var addr string
+			if err := child.ParseParams(&addr); err != nil {
+				return err
+			}
+
+			if _, _, err := net.SplitHostPort(addr); err != nil {
+				return fmt.Errorf("invalid acme_dns_update: %v", err)
+			}
+
+			srv.ACMEIssuer.DNS01Solver = &certmagic.DNS01Solver{
+				DNSProvider: &dnsupdate.Provider{Addr: addr},
 			}
 		default:
 			return fmt.Errorf("unknown %q directive", child.Name)

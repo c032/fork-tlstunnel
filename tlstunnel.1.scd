@@ -149,6 +149,11 @@ The following directives are supported:
 		as specified by dehydrated's hooks:
 		https://github.com/dehydrated-io/dehydrated
 
+	*acme_dns_update* <address>
+		Configure the ACME DNS challenge using the specified DNS UPDATE server.
+
+		The DNS server must implement DNS UPDATE as specified by RFC 2136.
+
 # FILES
 
 _/etc/tlstunnel/config_
