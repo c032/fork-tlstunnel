@@ -171,7 +171,7 @@ func (srv *Server) Replace(old *Server) error {
 	}
 
 	// Cleanup managed certs which are no longer used
-	managed := make(map[string]struct{}, len(old.ManagedNames))
+	managed := make(map[string]struct{}, len(srv.ManagedNames))
 	for _, name := range srv.ManagedNames {
 		managed[name] = struct{}{}
 	}
