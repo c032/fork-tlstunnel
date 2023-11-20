@@ -92,7 +92,8 @@ func (srv *Server) startACME() error {
 	srv.acmeCache.config.Store(srv.ACMEConfig)
 
 	for _, cert := range srv.UnmanagedCerts {
-		if err := srv.ACMEConfig.CacheUnmanagedTLSCertificate(ctx, cert, nil); err != nil {
+		_, err := srv.ACMEConfig.CacheUnmanagedTLSCertificate(ctx, cert, nil)
+		if err != nil {
 			return fmt.Errorf("failed to cache unmanaged TLS certificate: %v", err)
 		}
 	}
@@ -174,13 +175,13 @@ func (srv *Server) Replace(old *Server) error {
 	for _, name := range srv.ManagedNames {
 		managed[name] = struct{}{}
 	}
-	unmanage := make([]string, 0, len(old.ManagedNames))
+	removeManaged := make([]string, 0, len(old.ManagedNames))
 	for _, name := range old.ManagedNames {
 		if _, ok := managed[name]; !ok {
-			unmanage = append(unmanage, name)
+			removeManaged = append(removeManaged, name)
 		}
 	}
-	srv.ACMEConfig.Unmanage(unmanage)
+	srv.acmeCache.cache.RemoveManaged(removeManaged)
 
 	// TODO: evict unused unmanaged certs from the cache
 
