@@ -46,8 +46,9 @@ type Server struct {
 	ACMEIssuer *certmagic.ACMEIssuer
 	ACMEConfig *certmagic.Config
 
-	acmeCache  *acmeCache
-	cancelACME context.CancelFunc
+	acmeCache       *acmeCache
+	cancelACME      context.CancelFunc
+	unmanagedHashes []string
 }
 
 func NewServer() *Server {
@@ -92,10 +93,11 @@ func (srv *Server) startACME() error {
 	srv.acmeCache.config.Store(srv.ACMEConfig)
 
 	for _, cert := range srv.UnmanagedCerts {
-		_, err := srv.ACMEConfig.CacheUnmanagedTLSCertificate(ctx, cert, nil)
+		hash, err := srv.ACMEConfig.CacheUnmanagedTLSCertificate(ctx, cert, nil)
 		if err != nil {
 			return fmt.Errorf("failed to cache unmanaged TLS certificate: %v", err)
 		}
+		srv.unmanagedHashes = append(srv.unmanagedHashes, hash)
 	}
 
 	if err := srv.ACMEConfig.ManageAsync(ctx, srv.ManagedNames); err != nil {
@@ -183,7 +185,18 @@ func (srv *Server) Replace(old *Server) error {
 	}
 	srv.acmeCache.cache.RemoveManaged(removeManaged)
 
-	// TODO: evict unused unmanaged certs from the cache
+	// Cleanup unmanaged certs which are no longer used
+	unmanaged := make(map[string]struct{}, len(srv.unmanagedHashes))
+	for _, hash := range srv.unmanagedHashes {
+		unmanaged[hash] = struct{}{}
+	}
+	removeUnmanaged := make([]string, 0, len(old.unmanagedHashes))
+	for _, hash := range old.unmanagedHashes {
+		if _, ok := unmanaged[hash]; !ok {
+			removeUnmanaged = append(removeUnmanaged, hash)
+		}
+	}
+	srv.acmeCache.cache.Remove(removeUnmanaged)
 
 	return nil
 }
