@@ -18,7 +18,7 @@ import (
 	"github.com/pires/go-proxyproto/tlvparse"
 )
 
-const tlsHandshakeTimeout = 20 * time.Second
+const tlsHandshakeTimeout = 5 * time.Second
 
 type acmeCache struct {
 	config atomic.Value
